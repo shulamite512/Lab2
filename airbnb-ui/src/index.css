@@ -1,0 +1,153 @@
+/* Tailwind v4 single import */
+@import "tailwindcss";
+
+/* Design tokens */
+:root { 
+  --brand: #FF385C;
+}
+
+/* Base resets - Light mode only */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light only;
+  }
+
+  :root {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color: #111827 !important;
+    background-color: #ffffff !important;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body { 
+    margin: 0; 
+    padding: 0;
+    min-width: 320px; 
+    min-height: 100vh;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+  }
+
+  /* Ensure all text is visible - force solid colors */
+  h1, h2, h3, h4, h5, h6, p, span, div, label, input, textarea, select {
+    color: #111827 !important;
+  }
+  
+  html, body {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  /* Links */
+  a { 
+    font-weight: 500; 
+    color: #2563eb; 
+    text-decoration: inherit; 
+  }
+  a:hover { 
+    color: #1d4ed8; 
+  }
+
+  /* Headings */
+  h1 { 
+    font-size: 2.5rem; 
+    line-height: 1.2; 
+    font-weight: 700;
+    color: #111827;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.3;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  /* Buttons - ensure visibility */
+  button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1rem;
+    font-weight: 500;
+    background-color: #f3f4f6;
+    color: #111827;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  button:hover { 
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
+  }
+  
+  button:focus,
+  button:focus-visible { 
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Form inputs - ensure visibility */
+  input, textarea, select {
+    background-color: #ffffff;
+    color: #111827;
+    border: 1px solid #d1d5db;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-color: #3b82f6;
+  }
+
+  /* Utility to force solid surfaces on popups/overlays */
+  .opaque-surface {
+    background-color: #ffffff !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+  }
+
+}
+
+/* Component classes */
+@layer components {
+  .btn-brand { 
+    @apply bg-[var(--brand)] text-white rounded-lg px-4 py-2 font-semibold;
+  }
+  
+  .btn-brand:hover {
+    @apply opacity-90;
+  }
+}
+
+/* Global override to prevent any transparent colors - force solid colors */
+html, body, :root {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+/* Override any rgba or semi-transparent text colors */
+p, span, div, h1, h2, h3, h4, h5, h6, label, li, td, th {
+  color: #111827 !important;
+}

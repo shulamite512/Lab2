@@ -1,0 +1,218 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: airbnb-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: airbnb_clone
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/airbnb_clone --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: airbnb-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: airbnb_clone
+      MYSQL_USER: airbnb_user
+      MYSQL_PASSWORD: airbnb_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/db_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/02-seed_data.sql:/docker-entrypoint-initdb.d/02-seed_data.sql:ro
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: airbnb-zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: airbnb-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kafkadrop:
+    image: obsidiandynamics/kafdrop:4.1.0
+    container_name: airbnb-kafkadrop
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka:29092
+      JVM_OPTS: "-Xms32M -Xmx128M"
+      SERVER_SERVLET_CONTEXT_PATH: /
+    networks:
+      - airbnb-network
+
+  #Backend Service (Node.js) - Commented out, use external URL
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: airbnb-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/airbnb_clone
+      MYSQL_HOST: mysql
+      MYSQL_USER: airbnb_user
+      MYSQL_PASSWORD: airbnb_password
+      MYSQL_DATABASE: airbnb_clone
+      SESSION_SECRET: supersecretkey_production_change_this
+      PEXELS_API_KEY: HrXEJeADULZugwkvAzpixJ6YXNBOrImMvOTuVuZGHcG7ndzaxkPkuBtO
+      KAFKA_BROKER: kafka:29092
+      AI_SERVICE_URL: http://ai-service:8000
+    volumes:
+      - backend-uploads:/app/uploads
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  #Frontend Service (React + Nginx) - Commented out, use external URL
+  frontend:
+    build:
+      context: ./airbnb-ui
+      dockerfile: Dockerfile
+    container_name: airbnb-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  #AI Service (Python) - Commented out, use external URL
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: airbnb-ai-service
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ai-service/.env
+    environment:
+      PORT: 8000
+      MONGODB_URI: mongodb://mongodb:27017/airbnb_clone
+      MYSQL_HOST: mysql
+      MYSQL_USER: airbnb_user
+      MYSQL_PASSWORD: airbnb_password
+      MYSQL_DATABASE: airbnb_clone
+      KAFKA_BROKER: kafka:29092
+    networks:
+      - airbnb-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+networks:
+  airbnb-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+  mongodb-config:
+  mysql-data:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  backend-uploads:

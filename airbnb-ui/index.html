@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" style="color-scheme: light;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>airbnb-ui</title>
+    <style>
+      html, body, :root {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+      }
+      * {
+        color-scheme: light !important;
+        color: #111827 !important;
+      }
+      /* Override any rgba or hex colors with alpha/opacity */
+      *:not(button):not(input):not(textarea):not(select):not(img):not(svg) {
+        color: #111827 !important;
+        background-color: transparent !important;
+      }
+    </style>
+  </head>
+  <body style="background-color: #ffffff; color: #111827; margin: 0; padding: 0;">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

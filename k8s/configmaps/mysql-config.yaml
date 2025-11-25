@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: default
+data:
+  MYSQL_HOST: "mysql-service"
+  MYSQL_USER: "airbnb_user"
+  MYSQL_DATABASE: "airbnb_clone"
+

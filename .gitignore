@@ -1,0 +1,33 @@
+# Node / frontend build artifacts
+node_modules/
+airbnb-ui/dist/
+airbnb-ui/.vite/
+
+# Python caches / virtualenvs
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.env/
+.venv/
+
+# Environment & secret files
+*.env
+*/.env
+.env.local
+.env.*.local
+k8s/secrets/*.yaml
+aws/*secrets*.json
+
+# Runtime uploads & generated assets
+backend/uploads/
+
+# Logs and test artifacts
+*.log
+logs/
+cookies.txt
+jmeter-tests/results/
+
+# Docker / Compose overrides
+*.local.yml

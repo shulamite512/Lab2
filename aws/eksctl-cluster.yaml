@@ -1,0 +1,27 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: data236-cluster
+  region: us-east-1
+  version: "1.29"
+availabilityZones:
+  - us-east-1a
+  - us-east-1b
+  - us-east-1c
+
+managedNodeGroups:
+  - name: ng-t3-large
+    instanceType: t3.small
+    desiredCapacity: 6
+    minSize: 6
+    maxSize: 9
+    volumeSize: 100 # enough local storage for Mongo/MySQL/Kafka data volumes
+    amiFamily: AmazonLinux2
+    ssh:
+      allow: false
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        cloudWatch: true
+        ebs: true # to let EBS CSI driver manage PVs for databases and Kafka
